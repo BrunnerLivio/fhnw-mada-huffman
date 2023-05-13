@@ -7,5 +7,6 @@ public class HuffmanGenerator {
     String inputContent = FileHelper.readFile("input.txt");
 
     Huffman huffman = new Huffman(inputContent);
+    FileHelper.writeCodeTableToFile("dec_tab.txt", huffman.getCodeTable());
   }
 }

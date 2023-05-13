@@ -2,26 +2,18 @@ package src.ch.fhnw.mada;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.stream.Collectors;
 
 public class Huffman {
   private String input;
-  private TreeNode root;
   private int totalAmount;
+  private TreeNode root;
   // private HashMap<Integer, Integer> codeTable = new ArrayList<>();
 
   public Huffman(String input) {
     this.input = input;
     this.totalAmount = input.length();
-    ArrayList<TreeNode> probabilityTable = createProbabilityTable()
-        .stream()
-        .filter(ap -> ap.getAmount() > 0)
-        .collect(Collectors.toCollection(ArrayList::new));
-
-    createTree(probabilityTable);
-    System.out.println(root.getAmount());
-    System.out.println(root.getProbability());
-    System.out.println(root);
 
   }
 
@@ -64,4 +56,36 @@ public class Huffman {
 
     createTree(currentTable);
   }
+
+  private HashMap<Integer, String> createCodeTable(TreeNode root) {
+    return createCodeTable(root, "");
+  }
+
+  private HashMap<Integer, String> createCodeTable(TreeNode root, String currentCode) {
+    HashMap<Integer, String> codeTable = new HashMap<>();
+
+    if (root.getLeft() != null) {
+      codeTable.putAll(createCodeTable(root.getLeft(), currentCode + "0"));
+    }
+
+    if (root.getRight() != null) {
+      codeTable.putAll(createCodeTable(root.getRight(), currentCode + "1"));
+    }
+
+    if (root.getLeft() == null && root.getRight() == null) {
+      codeTable.put(root.getAscii(), currentCode);
+    }
+
+    return codeTable;
+  }
+
+  public HashMap<Integer, String> getCodeTable() {
+    ArrayList<TreeNode> probabilityTable = createProbabilityTable()
+        .stream()
+        .filter(ap -> ap.getAmount() > 0)
+        .collect(Collectors.toCollection(ArrayList::new));
+    createTree(probabilityTable);
+    return createCodeTable(root);
+  }
+
 }
