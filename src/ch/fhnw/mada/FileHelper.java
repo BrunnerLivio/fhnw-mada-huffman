@@ -1,27 +1,39 @@
 package src.ch.fhnw.mada;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.stream.Collectors;
 
 public class FileHelper {
-  public static void writeCodeTableToFile(String fileName, HashMap<Integer, String> codeTable) {
-    String result = codeTable
-        .entrySet()
-        .stream()
-        .map(e -> e.getKey() + ":" + e.getValue())
-        .collect(Collectors.joining("-"));
-    FileHelper.writeFile(fileName, result);
+  public static void writeBinaryFile(String fileName, byte[] out) {
+    try {
+      FileOutputStream fos = new FileOutputStream(fileName);
+      fos.write(out);
+      fos.close();
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
   }
-  
+
+  public static byte[] readBinaryFile(String fileName) {
+    try {
+      FileInputStream fis = new FileInputStream(fileName);
+      byte[] bFile = new byte[(int) fis.available()];
+      fis.read(bFile);
+      fis.close();
+      return bFile;
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
+    return new byte[0];
+  }
 
   public static void writeFile(String fileName, String content) {
     File keyFile = new File(fileName);
-    // if (!keyFile.exists()) {
-    //   keyFile.getParentFile().mkdirs();
-    // }
 
     try {
       keyFile.createNewFile();

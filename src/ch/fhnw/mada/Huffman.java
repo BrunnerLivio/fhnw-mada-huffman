@@ -3,18 +3,40 @@ package src.ch.fhnw.mada;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class Huffman {
   private String input;
+  private String output;
   private int totalAmount;
   private TreeNode root;
-  // private HashMap<Integer, Integer> codeTable = new ArrayList<>();
+  private HashMap<Integer, String> codeTable;
 
   public Huffman(String input) {
     this.input = input;
     this.totalAmount = input.length();
+    this.codeTable = generateCodeTable();
+  }
 
+  public Huffman(byte[] input, String codeTable) {
+    this.output = getBinaryStringFromByteArray(input);
+    this.codeTable = getCodeTableFromString(codeTable);
+  }
+
+  private String getBinaryStringFromByteArray(byte[] input) {
+    String output = "";
+
+    for (byte b : input) {
+      output += String.format("%8s", Integer.toBinaryString(b & 0xFF)).replace(' ', '0');
+    }
+
+    // Remove 1 and leading zeroes
+    int lastIndex = output.length() - 1;
+    while (lastIndex >= 0 && output.charAt(lastIndex) == '0') {
+      lastIndex--;
+    }
+    return output.substring(0, lastIndex + 1);
   }
 
   private ArrayList<TreeNode> createProbabilityTable() {
@@ -79,7 +101,24 @@ public class Huffman {
     return codeTable;
   }
 
-  public HashMap<Integer, String> getCodeTable() {
+  private HashMap<Integer, String> getCodeTableFromString(String input) {
+    HashMap<Integer, String> codeTable = new HashMap<>();
+    Arrays.asList(input.split("-")).forEach(e -> {
+      String[] entry = e.split(":");
+      codeTable.put(Integer.parseInt(entry[0]), entry[1]);
+    });
+    return codeTable;
+  }
+
+  public String getCodeTableAsString() {
+    return codeTable
+        .entrySet()
+        .stream()
+        .map(e -> e.getKey() + ":" + e.getValue())
+        .collect(Collectors.joining("-"));
+  }
+
+  private HashMap<Integer, String> generateCodeTable() {
     ArrayList<TreeNode> probabilityTable = createProbabilityTable()
         .stream()
         .filter(ap -> ap.getAmount() > 0)
@@ -88,4 +127,61 @@ public class Huffman {
     return createCodeTable(root);
   }
 
+  private int getCodeTableAsciiFromBinaryString(String binaryString) {
+    int ascii = -1;
+
+    // Find the ascii value for the current code
+    for (Map.Entry<Integer, String> entry : codeTable.entrySet()) {
+      if (entry.getValue().equals(binaryString)) {
+        ascii = entry.getKey();
+        break;
+      }
+    }
+    return ascii;
+  }
+
+  public HashMap<Integer, String> getCodeTable() {
+    return codeTable;
+  }
+
+  public byte[] encode() {
+    // Add 1 to the end to indicate the end of the string
+    String encodedString = input
+        .chars()
+        .mapToObj(c -> codeTable.get(c))
+        .collect(Collectors.joining()) + "1";
+
+    // Add leading zeroes so its a multiple of 8
+    while (encodedString.length() % 8 != 0) {
+      encodedString += "0";
+    }
+
+    // Convert to byte array
+    byte[] output = new byte[encodedString.length() / 8];
+    for (int i = 0; i < output.length; i++) {
+      output[i] = (byte) Integer.parseInt(encodedString.substring(i * 8, i * 8 + 8), 2);
+    }
+
+    return output;
+  }
+
+  public String decode() {
+    String currentCode = "";
+    String decodedString = "";
+
+    for (int i = 0; i < output.length(); i++) {
+      // Collect bits until a code is found
+      currentCode += output.charAt(i);
+      if (codeTable.containsValue(currentCode)) {
+        int ascii = getCodeTableAsciiFromBinaryString(currentCode);
+
+        if (ascii != -1) {
+          decodedString += (char) ascii;
+          currentCode = "";
+        }
+      }
+    }
+
+    return decodedString;
+  }
 }
