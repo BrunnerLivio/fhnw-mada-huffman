@@ -19,13 +19,17 @@ public class HuffmanGenerator {
     byte[] ourBinary = FileHelper.readBinaryFile("output.dat");
     Huffman ourHuffman = new Huffman(ourBinary, ourCodeTable);
     String ourOutput = ourHuffman.decode();
-    System.out.println(ourOutput);
+    System.out.println("==== Ours ====");
+    System.out.println("Output: " + ourOutput);
+    System.out.println("Compression Rate: " + ourHuffman.compressionRate() + "%");
 
     // Decode Vogts
     String codeTable = FileHelper.readFile("dec_tab-mada.txt");
     byte[] binary = FileHelper.readBinaryFile("output-mada.dat");
     Huffman theirHuffman = new Huffman(binary, codeTable);
     String theirOutput = theirHuffman.decode();
-    System.out.println(theirOutput);
+    System.out.println("==== Vogts ====");
+    System.out.println("Output: " + theirOutput);
+    System.out.println("Compression Rate: " + theirHuffman.compressionRate() + "%");
   }
 }

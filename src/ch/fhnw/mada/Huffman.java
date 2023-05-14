@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 
 public class Huffman {
   private String input;
-  private String output;
+  private String outputBinaryString;
   private int totalAmount;
   private TreeNode root;
   private HashMap<Integer, String> codeTable;
@@ -20,7 +20,7 @@ public class Huffman {
   }
 
   public Huffman(byte[] input, String codeTable) {
-    this.output = getBinaryStringFromByteArray(input);
+    this.outputBinaryString = getBinaryStringFromByteArray(input);
     this.codeTable = getCodeTableFromString(codeTable);
   }
 
@@ -169,9 +169,9 @@ public class Huffman {
     String currentCode = "";
     String decodedString = "";
 
-    for (int i = 0; i < output.length(); i++) {
+    for (int i = 0; i < outputBinaryString.length(); i++) {
       // Collect bits until a code is found
-      currentCode += output.charAt(i);
+      currentCode += outputBinaryString.charAt(i);
       if (codeTable.containsValue(currentCode)) {
         int ascii = getCodeTableAsciiFromBinaryString(currentCode);
 
@@ -183,5 +183,12 @@ public class Huffman {
     }
 
     return decodedString;
+  }
+
+  public int compressionRate() {
+    double inputLengthInBits = decode().length() * 8;
+    double outputLengthInBits = outputBinaryString.length();
+
+    return (int) Math.round(outputLengthInBits / inputLengthInBits * 100.0);
   }
 }
