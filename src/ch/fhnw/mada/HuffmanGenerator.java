@@ -23,7 +23,7 @@ public class HuffmanGenerator {
     System.out.println("Output: " + ourOutput);
     System.out.println("Compression Rate: " + ourHuffman.compressionRate() + "%");
 
-    // Decode Vogts
+    // Decode theirs
     String codeTable = FileHelper.readFile("dec_tab-mada.txt");
     byte[] binary = FileHelper.readBinaryFile("output-mada.dat");
     Huffman theirHuffman = new Huffman(binary, codeTable);

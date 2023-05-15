@@ -14,33 +14,21 @@ public class Huffman {
   private HuffmanTreeNode root;
   private HashMap<Integer, String> codeTable;
 
+  /**
+   * For encoding
+   */
   public Huffman(String input) {
     this.input = input;
     this.totalAmount = input.length();
     this.codeTable = generateCodeTable();
   }
 
+  /**
+   * For decoding
+   */
   public Huffman(byte[] input, String codeTable) {
-    this.outputBinaryString = getBinaryStringFromByteArray(input);
+    this.outputBinaryString = BinaryStringHelper.fromByteArray(input);
     this.codeTable = parseCodeTableFromString(codeTable);
-  }
-
-  private String getBinaryStringFromByteArray(byte[] input) {
-    String output = "";
-
-    for (byte b : input) {
-      // Converts byte to string that represents the binary value of the byte. Taken
-      // from StackOverflow:
-      // https://stackoverflow.com/questions/12310017/how-to-convert-a-byte-to-its-binary-string-representation
-      output += String.format("%8s", Integer.toBinaryString(b & 0xFF)).replace(' ', '0');
-    }
-
-    // Remove 1 and leading zeroes
-    int lastIndex = output.length() - 1;
-    while (lastIndex >= 0 && output.charAt(lastIndex) == '0') {
-      lastIndex--;
-    }
-    return output.substring(0, lastIndex + 1);
   }
 
   private ArrayList<HuffmanTreeNode> createProbabilityTable() {
