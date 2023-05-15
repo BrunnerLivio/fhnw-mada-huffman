@@ -5,8 +5,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.HashMap;
-import java.util.stream.Collectors;
 
 public class FileHelper {
   public static void writeBinaryFile(String fileName, byte[] out) {

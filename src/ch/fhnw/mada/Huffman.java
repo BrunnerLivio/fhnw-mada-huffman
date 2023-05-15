@@ -4,13 +4,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class Huffman {
   private String input;
   private String outputBinaryString;
   private int totalAmount;
-  private TreeNode root;
+  private HuffmanTreeNode root;
   private HashMap<Integer, String> codeTable;
 
   public Huffman(String input) {
@@ -21,13 +22,16 @@ public class Huffman {
 
   public Huffman(byte[] input, String codeTable) {
     this.outputBinaryString = getBinaryStringFromByteArray(input);
-    this.codeTable = getCodeTableFromString(codeTable);
+    this.codeTable = parseCodeTableFromString(codeTable);
   }
 
   private String getBinaryStringFromByteArray(byte[] input) {
     String output = "";
 
     for (byte b : input) {
+      // Converts byte to string that represents the binary value of the byte. Taken
+      // from StackOverflow:
+      // https://stackoverflow.com/questions/12310017/how-to-convert-a-byte-to-its-binary-string-representation
       output += String.format("%8s", Integer.toBinaryString(b & 0xFF)).replace(' ', '0');
     }
 
@@ -39,61 +43,90 @@ public class Huffman {
     return output.substring(0, lastIndex + 1);
   }
 
-  private ArrayList<TreeNode> createProbabilityTable() {
-    ArrayList<TreeNode> probabilityTable = new ArrayList<>();
+  private ArrayList<HuffmanTreeNode> createProbabilityTable() {
+    ArrayList<HuffmanTreeNode> probabilityTable = new ArrayList<>();
 
-    Arrays.asList(input.split("")).forEach(c -> {
-      int ascii = (int) c.charAt(0);
-      if (probabilityTable.stream().anyMatch(ap -> ap.getAscii() == ascii)) {
-        probabilityTable.stream()
-            .filter(ap -> ap.getAscii() == ascii)
-            .findFirst()
-            .get()
-            .increment();
-      } else {
-        probabilityTable.add(new TreeNode(ascii, 1, totalAmount));
-      }
-    });
+    // We iterate through every character. If that character is already in the
+    // probability table, we increment the amount. Otherwise we add it to the table.
+    Arrays
+        .asList(input.split(""))
+        .forEach(c -> {
+          // Get ASCII value of character
+          int ascii = (int) c.charAt(0);
 
-    return probabilityTable;
+          Optional<HuffmanTreeNode> existingNode = probabilityTable.stream().filter(ap -> ap.getAscii() == ascii)
+              .findFirst();
+
+          if (existingNode.isPresent()) {
+            existingNode.get().increment();
+          } else {
+            probabilityTable.add(new HuffmanTreeNode(ascii, 1, totalAmount));
+          }
+        });
+
+    return probabilityTable.stream()
+        .filter(ap -> ap.getAmount() > 0)
+        .collect(Collectors.toCollection(ArrayList::new));
   }
 
-  private void createTree(ArrayList<TreeNode> currentTable) {
+  private void constructTree(ArrayList<HuffmanTreeNode> currentTable) {
+
+    // We sort the array by the amount descending. This way the smallest two
+    // elements are always at the beginning of the array.
     currentTable.sort((a, b) -> a.getAmount() - b.getAmount());
 
+    // We take the first two elements...
+    ArrayList<HuffmanTreeNode> smallestTwo = currentTable.stream()
+        .limit(2)
+        .collect(Collectors.toCollection(ArrayList::new));
+
+    // ...and create a new parent node
+    // __c <- new parent node
+    // _/_\
+    // a___b
+    HuffmanTreeNode parent = new HuffmanTreeNode(smallestTwo.get(0), smallestTwo.get(1), totalAmount);
+    currentTable.add(parent);
+    // Remove the smallest two elements
+    currentTable.remove(0);
+    currentTable.remove(0);
+
+    // We have reached the end in the tree if there is only one element left in the
+    // array. This element is the root node.
     if (currentTable.size() == 1) {
-      TreeNode root = currentTable.get(0);
+      HuffmanTreeNode root = currentTable.get(0);
       this.root = root;
       return;
     }
 
-    ArrayList<TreeNode> smallestTwo = currentTable.stream()
-        .limit(2)
-        .collect(Collectors.toCollection(ArrayList::new));
-
-    TreeNode parent = new TreeNode(smallestTwo.get(0), smallestTwo.get(1), totalAmount);
-    currentTable.add(parent);
-    currentTable.remove(0);
-    currentTable.remove(0);
-
-    createTree(currentTable);
+    constructTree(currentTable);
   }
 
-  private HashMap<Integer, String> createCodeTable(TreeNode root) {
+  private HashMap<Integer, String> createCodeTable(HuffmanTreeNode root) {
     return createCodeTable(root, "");
   }
 
-  private HashMap<Integer, String> createCodeTable(TreeNode root, String currentCode) {
+  private HashMap<Integer, String> createCodeTable(HuffmanTreeNode root, String currentCode) {
     HashMap<Integer, String> codeTable = new HashMap<>();
 
+    // We have a left node, so we add a 0 to the code and continue until we have
+    // founded a leaf
+    // ____c
+    // _0/___\
+    // _a_____b
     if (root.getLeft() != null) {
       codeTable.putAll(createCodeTable(root.getLeft(), currentCode + "0"));
     }
 
+    // We have a right node, so we add a 1 to the code and continue until we have
+    // founded a leaf
+    // ____c
+    // __/___\1
+    // _a_____b
     if (root.getRight() != null) {
       codeTable.putAll(createCodeTable(root.getRight(), currentCode + "1"));
     }
 
+    // We have reached a leaf, so we can now add the code to the code table
     if (root.getLeft() == null && root.getRight() == null) {
       codeTable.put(root.getAscii(), currentCode);
     }
@@ -101,30 +134,19 @@ public class Huffman {
     return codeTable;
   }
 
-  private HashMap<Integer, String> getCodeTableFromString(String input) {
+  private HashMap<Integer, String> generateCodeTable() {
+    ArrayList<HuffmanTreeNode> probabilityTable = createProbabilityTable();
+    constructTree(probabilityTable);
+    return createCodeTable(root);
+  }
+
+  private HashMap<Integer, String> parseCodeTableFromString(String input) {
     HashMap<Integer, String> codeTable = new HashMap<>();
     Arrays.asList(input.split("-")).forEach(e -> {
       String[] entry = e.split(":");
       codeTable.put(Integer.parseInt(entry[0]), entry[1]);
     });
     return codeTable;
-  }
-
-  public String getCodeTableAsString() {
-    return codeTable
-        .entrySet()
-        .stream()
-        .map(e -> e.getKey() + ":" + e.getValue())
-        .collect(Collectors.joining("-"));
-  }
-
-  private HashMap<Integer, String> generateCodeTable() {
-    ArrayList<TreeNode> probabilityTable = createProbabilityTable()
-        .stream()
-        .filter(ap -> ap.getAmount() > 0)
-        .collect(Collectors.toCollection(ArrayList::new));
-    createTree(probabilityTable);
-    return createCodeTable(root);
   }
 
   private int getCodeTableAsciiFromBinaryString(String binaryString) {
@@ -140,8 +162,12 @@ public class Huffman {
     return ascii;
   }
 
-  public HashMap<Integer, String> getCodeTable() {
-    return codeTable;
+  public String getCodeTableAsString() {
+    return codeTable
+        .entrySet()
+        .stream()
+        .map(e -> e.getKey() + ":" + e.getValue())
+        .collect(Collectors.joining("-"));
   }
 
   public byte[] encode() {
@@ -159,7 +185,15 @@ public class Huffman {
     // Convert to byte array
     byte[] output = new byte[encodedString.length() / 8];
     for (int i = 0; i < output.length; i++) {
-      output[i] = (byte) Integer.parseInt(encodedString.substring(i * 8, i * 8 + 8), 2);
+      // Get 8 bits at a time.
+      // e.g.
+      // i = 0
+      // startIndex: 0 * 8 = 0
+      // endIndex: 0 * 8 + 8 = 8
+      String currentByte = encodedString.substring(i * 8, i * 8 + 8);
+
+      // Convert to byte. Second parameter is the radix, which is 2 for binary.
+      output[i] = (byte) Integer.parseInt(currentByte, 2);
     }
 
     return output;
@@ -175,10 +209,12 @@ public class Huffman {
       if (codeTable.containsValue(currentCode)) {
         int ascii = getCodeTableAsciiFromBinaryString(currentCode);
 
-        if (ascii != -1) {
-          decodedString += (char) ascii;
-          currentCode = "";
+        if (ascii == -1) {
+          continue;
         }
+
+        decodedString += (char) ascii;
+        currentCode = "";
       }
     }
 
